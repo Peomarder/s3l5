@@ -215,7 +215,7 @@ for(int cell : row) {
 if(cell == 0) {
 std::cout << "* ";
 } else {
-std::cout << (cell > 0 ? '+' : '\0') << cell;
+std::cout << (cell > 0 ? "+" : "\0\b") << cell;
 }
 }
 std::cout << '\n';
