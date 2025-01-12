@@ -9,8 +9,8 @@
 using namespace std;
 
 enum Direction { UP = 0, RIGHT = 1, DOWN = 2, LEFT = 3 };
-const std::string PRESET_SCENARIO = //"4 4 20 1 1 0 0 1 100 0 3 0 100\n";
-"3 3 5\n 2 1\n 1 2 1 1\n 1 1 0 2\n 0 2 1 2\n";	
+const std::string PRESET_SCENARIO = "4 4 20 1 1 0 0 1 100 0 3 0 100\n";
+//"3 3 5\n 2 1\n 1 2 1 1\n 1 1 0 2\n 0 2 1 2\n";	
 
 
 class Animal {
@@ -49,7 +49,7 @@ public:
 	virtual bool isHungry() const = 0;
 	virtual void eat() = 0;
 	virtual bool canReproduce() const = 0;
-	virtual Animal* reproduce() const = 0;
+	virtual Animal* reproduce() = 0;
 	virtual bool isDead() const = 0;
 	virtual bool isPredator() const = 0;
 
@@ -57,6 +57,8 @@ public:
 
 	int getX() const { return posX; }
 	int getY() const { return posY; }
+    Direction getDirection() const { return direction; }
+    int getTurnPeriod() const { return turnPeriod; }
 };
 
 class Prey : public Animal {
@@ -75,7 +77,7 @@ public:
 		return (age == 5 && !hasReproduced1) || (age == 10 && !hasReproduced2);
 	}
 
-	Animal* reproduce() const override {
+	Animal* reproduce() override {
 		return new Prey(posX, posY, direction, turnPeriod);
 	}
 
@@ -87,6 +89,7 @@ class Predator : public Animal {
 private:
 	static const int MAX_AGE = 20;
 	int preyEaten;
+	int reproduced = 1;
 
 public:
 	Predator(int x, int y, Direction d, int k) : 
@@ -103,10 +106,11 @@ public:
 	}
 
 	bool canReproduce() const override {
-		return preyEaten >= 2;
+		return preyEaten >= 2*reproduced;
 	}
 
-	Animal* reproduce() const override {
+	Animal* reproduce() override {
+		reproduced++;
 		return new Predator(posX, posY, direction, turnPeriod);
 	}
 
@@ -186,6 +190,7 @@ public:
 	void simulateStep() {
 		moveAnimals();
 		processPredation();
+		aging();
 		reproduction();
 		extinction();
 	}
@@ -251,8 +256,38 @@ int main() {
 	std::cout << "2. Preset scenario\n";
 	std::cout << "3. Random generation\n";
 	int choice;
-	std::cin >> choice;
 	
+	std::cin >> choice;
+		std::istringstream presetInput(PRESET_SCENARIO);
+	if(choice == 2) {
+		int R, W;
+		int N, M, T;
+	
+		presetInput >> N >> M >> T;
+		GameSimulation game(N, M);
+		presetInput >> R >> W;
+		
+		for(int i = 0; i < R; i++) {
+			int x, y, d, k;
+			presetInput >> x >> y >> d >> k;
+			game.addAnimal(new Prey(x, y, static_cast<Direction>(d), k));
+		}
+
+		for(int i = 0; i < W; i++) {
+			int x, y, d, k;
+			presetInput >> x >> y >> d >> k;
+			game.addAnimal(new Predator(x, y, static_cast<Direction>(d), k));
+		}
+			std::cout << "\nStep " << 0 << ":\n";
+			game.printField();
+		
+	for(int i = 0; i < T; i++) {
+		std::cout << "\nStep " << i + 1 << ":\n";
+		game.simulateStep();
+		game.printField();
+		}
+	}
+	else {
 		int N, M, T;
 		std::cout << "Enter field width, height and number of steps: ";
 		std::cin >> N >> M >> T;
@@ -268,24 +303,22 @@ int main() {
 
 	
 	}
-	else {
-		std::istringstream presetInput(PRESET_SCENARIO);
-		std::istream& input = (choice == 2) ? presetInput : std::cin;
+	else if(choice == 1) {
 
 		int R, W;
 		std::cout << "Enter number of prey and predators: ";
-		input >> R >> W;
+		cin >> R >> W;
 
 
 		for(int i = 0; i < R; i++) {
 			int x, y, d, k;
-			input >> x >> y >> d >> k;
+			cin >> x >> y >> d >> k;
 			game.addAnimal(new Prey(x, y, static_cast<Direction>(d), k));
 		}
 
 		for(int i = 0; i < W; i++) {
 			int x, y, d, k;
-			input >> x >> y >> d >> k;
+			cin >> x >> y >> d >> k;
 			game.addAnimal(new Predator(x, y, static_cast<Direction>(d), k));
 		}
 			std::cout << "\nStep " << 0 << ":\n";
@@ -298,5 +331,6 @@ int main() {
 		game.simulateStep();
 		game.printField();
 		}
+	}
 	return 0;
 }
